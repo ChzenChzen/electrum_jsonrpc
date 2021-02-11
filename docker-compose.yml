@@ -2,5 +2,8 @@ version: '3'
 
 services:
   electrum:
-
     build: .
+    environment:
+      - ELECTRUM_TESTNET=${ELECTRUM_TESTNET}
+      - ELECTRUM_USER=${ELECTRUM_USER}
+      - ELECTRUM_PASSWORD=${ELECTRUM_PASSWORD}
