@@ -14,15 +14,15 @@ fi
 trap 'pkill -TERM -P1; electrum daemon stop; exit 0' SIGTERM
 
 # Set config
-electrum $FLAGS setconfig rpcuser ${ELECTRUM_USER}
-electrum $FLAGS setconfig rpcpassword ${ELECTRUM_PASSWORD}
-electrum $FLAGS setconfig rpchost 0.0.0.0
-electrum $FLAGS setconfig rpcport 7000
+electrum setconfig rpcuser ${ELECTRUM_USER} $FLAGS --offline
+electrum setconfig rpcpassword ${ELECTRUM_PASSWORD} $FLAGS --offline
+electrum setconfig rpchost 0.0.0.0 $FLAGS --offline
+electrum setconfig rpcport 7000 $FLAGS --offline
 
 # XXX: Check load wallet or create
 
 # Run application
-electrum $FLAGS daemon start
+electrum daemon -d $FLAGS
 
 # Wait forever
 while true; do
