@@ -6,6 +6,9 @@ type Result<T> = std::result::Result<T, GenericError>;
 
 static URL: &str = "http://127.0.0.1:7000";
 
+
+// async fn
+
 async fn handle_incoming(req: Request<Body>) -> Result<Response<Body>> {
     match (req.method(), req.uri().path()) {
         (&Method::GET, "/get_balance") => Ok(Response::new(Body::empty())),
