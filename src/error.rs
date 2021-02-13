@@ -3,18 +3,23 @@ use std::fmt;
 use std::error;
 use crate::error::ElectrumRpcError::AddressError;
 
-type Result<T> = std::result::Result<T, ElectrumRpcError>;
+pub type Result<T> = std::result::Result<T, ElectrumRpcError>;
 
-#[derive(Debug)]
 pub enum ElectrumRpcError {
     AddressError(AddrParseError),
 }
 
 impl fmt::Display for ElectrumRpcError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             AddressError(..) => write!(f, "the provided address couldn't parsed."),
         }
+    }
+}
+
+impl fmt::Debug for ElectrumRpcError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        <ElectrumRpcError as std::fmt::Display>::fmt(self, f)
     }
 }
 
