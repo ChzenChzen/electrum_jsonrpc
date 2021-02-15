@@ -16,6 +16,7 @@ use hyper::header::AUTHORIZATION;
 use base64;
 use std::collections::HashMap;
 use std::str;
+use std::path::Path;
 
 pub struct ElectrumRpc {
     auth: String,
@@ -29,13 +30,31 @@ enum ElectrumMethod {
     #[serde(rename = "getinfo")]
     GetInfo,
     GetBalance,
+
+    #[serde(rename = "list_wallets")]
+    ListWallets,
+
+    #[serde(rename = "load_wallet")]
+    LoadWallet,
+
+    #[serde(rename = "create")]
+    CreateWallet,
+
+    #[serde(rename = "listaddresses")]
+    ListAddresses,
+
     Help,
     Empty,
 }
 
 
 #[derive(Hash, PartialEq, Eq, Serialize, Deserialize)]
-enum Param {}
+enum Param {
+    #[serde(rename = "wallet_path")]
+    WalletPath,
+
+    Password,
+}
 
 
 struct RpcBodyBuilder {
@@ -70,7 +89,7 @@ impl RpcBodyBuilder {
         self
     }
 
-    pub fn param(mut self, key: Param, value: String) -> Self {
+    pub fn add_param(mut self, key: Param, value: String) -> Self {
         self.params.insert(key, value);
         self
     }
@@ -84,6 +103,7 @@ impl RpcBodyBuilder {
         }
     }
 }
+
 
 #[derive(Serialize, Deserialize)]
 struct RpcBody {
@@ -114,14 +134,14 @@ impl ElectrumRpc {
         })
     }
 
-    async fn call_method(&self, body: &RpcBody) -> Result<String>
+    async fn call_method(&self, body: RpcBody) -> Result<String>
     {
         let req = Request::builder()
             .method(Method::POST)
             .header("accept", "application/json")
             .header(AUTHORIZATION, &self.auth)
             .uri("http://test:test@localhost:7000")
-            .body(Body::from(serde_json::to_string(body).unwrap()))// serialize here!
+            .body(Body::from(serde_json::to_string(&body).unwrap()))// serialize here!
             .unwrap();
 
         println!("{}", req.uri());
@@ -134,14 +154,69 @@ impl ElectrumRpc {
         Ok(text.to_string())
     }
 
-    pub async fn help(&self) -> Result<String> {
-        let body = RpcBody::new()
-            .json_rpc(2.0)
-            .id(0)
-            .method(ElectrumMethod::Help)
-            .build();
+    pub async fn get_help(&self) -> Result<String> {
+        self.call_method(
+            RpcBody::new()
+                .id(0)
+                .method(ElectrumMethod::Help)
+                .build()
+        ).await
+    }
 
-        self.call_method(&body).await
+    pub async fn get_info(&self) -> Result<String> {
+        self.call_method(
+            RpcBody::new()
+                .method(ElectrumMethod::GetInfo)
+                .build()
+        ).await
+    }
+
+    pub async fn get_balance(&self) -> Result<String> {
+        self.call_method(
+            RpcBody::new()
+                .method(ElectrumMethod::GetBalance)
+                .build()
+        ).await
+    }
+
+    pub async fn list_wallets(&self) -> Result<String> {
+        self.call_method(
+            RpcBody::new()
+                .method(ElectrumMethod::ListWallets)
+                .build()
+        ).await
+    }
+
+    pub async fn load_wallet(&self, wallet_path: Option<Box<Path>>, password: Option<String>) -> Result<String> {
+        let mut builder = RpcBody::new()
+            .method(ElectrumMethod::LoadWallet);
+
+
+        if let Some(path) = wallet_path {
+            builder = builder.add_param(Param::WalletPath, path.to_str().unwrap().to_string())
+        };
+
+        if let Some(password) = password {
+            builder = builder.add_param(Param::Password, password)
+        };
+
+        self.call_method(builder.build()).await
+    }
+
+    pub async fn create_wallet(&self) -> Result<String> {
+        self.call_method(
+            RpcBody::new()
+                .method(ElectrumMethod::CreateWallet)
+                .build()
+        ).await
+    }
+
+    pub async fn list_addresses(&self) -> Result<String> {
+        self.call_method(
+            RpcBody::new()
+                .method(ElectrumMethod::ListAddresses)
+                .build()
+        ).await
     }
 }
 
@@ -201,15 +276,12 @@ mod tests {
     }
 
     #[test]
-    fn rpc_body() {
-        let params = vec![].into_iter().collect();
-
-        let body = RpcBody {
-            json_rpc: 2.0,
-            id: 1111,
-            method: ElectrumMethod::GetInfo,
-            params,
-        };
+    fn rpc_body_builder() {
+        let body = RpcBody::new()
+            .json_rpc(2.0)
+            .id(1111)
+            .method(ElectrumMethod::GetInfo)
+            .build();
 
         let actual = serde_json::to_string(&body).unwrap();
         let expected = r#"{"json_rpc":2.0,"id":1111,"method":"getinfo","params":{}}"#;
@@ -232,8 +304,84 @@ mod tests {
             method: ElectrumMethod::GetInfo,
             params,
         };
-        let res = electrum.call_method(&body).await.unwrap();
+        let res = electrum.call_method(body).await.unwrap();
+        assert_eq!("hello".to_string(), res);
+    }
+
+    // #[tokio::test]
+    async fn call_method_help() {
+        let electrum = get_electrum_rpc();
+        let res = electrum.get_help().await.unwrap();
         println!("{}", res);
         assert_eq!("hello".to_string(), res);
+    }
+
+    // #[tokio::test]
+    async fn call_method_get_info() {
+        let electrum = get_electrum_rpc();
+
+        let res = electrum.get_info().await.unwrap();
+        println!("{}", res);
+        assert_eq!("hello".to_string(), res);
+    }
+
+    // #[tokio::test]
+    async fn call_method_get_balance() {
+        let electrum = get_electrum_rpc();
+
+        let res = electrum.get_balance().await.unwrap();
+        println!("{}", res);
+        assert_eq!("hello".to_string(), res);
+    }
+
+
+    // #[tokio::test]
+    async fn call_method_list_wallets() {
+        let electrum = get_electrum_rpc();
+
+        let res = electrum.list_wallets().await.unwrap();
+        println!("{}", res);
+        assert_eq!("hello".to_string(), res);
+    }
+
+    // #[tokio::test]
+    async fn call_method_load_wallet_default_wallet() {
+        let electrum = get_electrum_rpc();
+
+        let res = electrum.load_wallet(None, None).await.unwrap();
+        assert_eq!("hello".to_string(), res);
+    }
+
+    // #[tokio::test]
+    async fn call_method_load_wallet_from_path_without_password() {
+        let electrum = get_electrum_rpc();
+        let path = Some(Box::from(Path::new("/home/electrum/.electrum/testnet/wallets/default_wallet")));
+        let res = electrum.load_wallet(path, None).await.unwrap();
+        assert_eq!("hello".to_string(), res);
+    }
+
+    // #[tokio::test]
+    async fn call_method_load_wallet_from_path_with_password() {
+        // let electrum = get_electrum_rpc();
+        // let path = Some(Box::from(Path::new("/home/electrum/.electrum/testnet/wallets/default_wallet")));
+        // let res = electrum.load_wallet(path, None).await.unwrap();
+        // assert_eq!("hello".to_string(), res);
+        todo!()
+    }
+
+    // #[tokio::test]
+    async fn call_method_create_wallet_default() {
+        let electrum = get_electrum_rpc();
+        let res = electrum.create_wallet().await.unwrap();
+        assert_eq!("hello".to_string(), res);
+        todo!()
+    }
+
+    // #[tokio::test]
+    async fn call_method_list_addresses_default() {
+        let electrum = get_electrum_rpc();
+        let res = electrum.list_addresses().await.unwrap();
+        assert_eq!("hello".to_string(), res);
+        todo!()
     }
 }
