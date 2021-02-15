@@ -14,8 +14,8 @@ fi
 trap 'pkill -TERM -P1; electrum daemon stop; exit 0' SIGTERM
 
 # Set config
-electrum setconfig rpcuser ${ELECTRUM_USER} $FLAGS --offline
-electrum setconfig rpcpassword ${ELECTRUM_PASSWORD} $FLAGS --offline
+electrum setconfig rpcuser "${ELECTRUM_USER}" $FLAGS --offline
+electrum setconfig rpcpassword "${ELECTRUM_PASSWORD}" $FLAGS --offline
 electrum setconfig rpchost 0.0.0.0 $FLAGS --offline
 electrum setconfig rpcport 7000 $FLAGS --offline
 
