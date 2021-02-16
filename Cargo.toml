@@ -1,6 +1,6 @@
 [package]
-name = "bitcoin_mixer"
-version = "0.1.0"
+name = "electrum_jsonrpc"
+version = "0.2.1"
 authors = ["fomotoshi <fomotoshi@ya.ru>"]
 edition = "2018"
 
@@ -12,3 +12,4 @@ hyper = { version = "0.14.4", features = ["full"] }
 base64 = "0.13.0"
 serde = { version = "1.0.123", features = ["derive"] }
 serde_json = "1.0.62"
+lazy_static = "1.4.0"
