@@ -6,7 +6,7 @@
 mod error;
 mod ext;
 
-use hyper::{Client, Uri, Request, Body, Method};
+use hyper::{Client, Uri, Request, Body, Method, Response};
 use std::net::{ToSocketAddrs, SocketAddr};
 use hyper::client::HttpConnector;
 use error::{ElectrumRpcError, Result};
@@ -134,27 +134,22 @@ impl ElectrumRpc {
         })
     }
 
-    async fn call_method(&self, body: RpcBody) -> Result<String>
-    {
+    async fn call_method(&self, body: RpcBody) -> Result<Response<Body>> {
+        let payload = serde_json::to_string(&body)?;
+
         let req = Request::builder()
             .method(Method::POST)
             .header("accept", "application/json")
             .header(AUTHORIZATION, &self.auth)
-            .uri("http://test:test@localhost:7000")
-            .body(Body::from(serde_json::to_string(&body).unwrap()))// serialize here!
-            .unwrap();
+            .uri("http://tests:tests@localhost:7000")
+            .body(Body::from(payload))?;
 
-        println!("{}", req.uri());
+        let resp = self.client.request(req).await?;
 
-        let resp = self.client.request(req).await.unwrap();
-
-        let buf = hyper::body::to_bytes(resp).await.unwrap();
-        let text = str::from_utf8(buf.chunk()).unwrap();
-
-        Ok(text.to_string())
+        Ok(resp)
     }
 
-    pub async fn get_help(&self) -> Result<String> {
+    pub async fn get_help(&self) -> Result<Response<Body>> {
         self.call_method(
             RpcBody::new()
                 .id(0)
@@ -163,7 +158,7 @@ impl ElectrumRpc {
         ).await
     }
 
-    pub async fn get_info(&self) -> Result<String> {
+    pub async fn get_info(&self) -> Result<Response<Body>> {
         self.call_method(
             RpcBody::new()
                 .method(ElectrumMethod::GetInfo)
@@ -171,7 +166,7 @@ impl ElectrumRpc {
         ).await
     }
 
-    pub async fn get_balance(&self) -> Result<String> {
+    pub async fn get_balance(&self) -> Result<Response<Body>> {
         self.call_method(
             RpcBody::new()
                 .method(ElectrumMethod::GetBalance)
@@ -179,7 +174,7 @@ impl ElectrumRpc {
         ).await
     }
 
-    pub async fn list_wallets(&self) -> Result<String> {
+    pub async fn list_wallets(&self) -> Result<Response<Body>> {
         self.call_method(
             RpcBody::new()
                 .method(ElectrumMethod::ListWallets)
@@ -187,7 +182,7 @@ impl ElectrumRpc {
         ).await
     }
 
-    pub async fn load_wallet(&self, wallet_path: Option<Box<Path>>, password: Option<String>) -> Result<String> {
+    pub async fn load_wallet(&self, wallet_path: Option<Box<Path>>, password: Option<String>) -> Result<Response<Body>> {
         let mut builder = RpcBody::new()
             .method(ElectrumMethod::LoadWallet);
 
@@ -203,7 +198,7 @@ impl ElectrumRpc {
         self.call_method(builder.build()).await
     }
 
-    pub async fn create_wallet(&self) -> Result<String> {
+    pub async fn create_wallet(&self) -> Result<Response<Body>> {
         self.call_method(
             RpcBody::new()
                 .method(ElectrumMethod::CreateWallet)
@@ -211,7 +206,7 @@ impl ElectrumRpc {
         ).await
     }
 
-    pub async fn list_addresses(&self) -> Result<String> {
+    pub async fn list_addresses(&self) -> Result<Response<Body>> {
         self.call_method(
             RpcBody::new()
                 .method(ElectrumMethod::ListAddresses)
@@ -227,8 +222,8 @@ mod tests {
     use std::error::Error;
 
     static ADDR: &str = "http://127.0.0.1:7000";
-    static LOGIN: &str = "test";
-    static PASSWORD: &str = "test";
+    static LOGIN: &str = "tests";
+    static PASSWORD: &str = "tests";
 
     fn get_electrum_rpc() -> ElectrumRpc {
         ElectrumRpc::new(
@@ -250,7 +245,7 @@ mod tests {
 
         let encoded_creds = electrum.auth.split(' ').collect::<Vec<&str>>()[1];
         let decoded_creds = base64::decode(encoded_creds).unwrap();
-        assert_eq!("test:test", std::str::from_utf8(&decoded_creds).unwrap());
+        assert_eq!("tests:tests", std::str::from_utf8(&decoded_creds).unwrap());
     }
 
     #[test]
@@ -286,102 +281,5 @@ mod tests {
         let actual = serde_json::to_string(&body).unwrap();
         let expected = r#"{"json_rpc":2.0,"id":1111,"method":"getinfo","params":{}}"#;
         assert_eq!(expected, actual);
-    }
-
-    // #[tokio::test]
-    async fn call_method_simple_test() {
-        let electrum = ElectrumRpc::new(
-            LOGIN.to_string(),
-            PASSWORD.to_string(),
-            "http://127.0.0.1:7000/".to_string(),
-        ).unwrap();
-
-        let params = vec![].into_iter().collect();
-
-        let body = RpcBody {
-            json_rpc: 2.0,
-            id: 1111,
-            method: ElectrumMethod::GetInfo,
-            params,
-        };
-        let res = electrum.call_method(body).await.unwrap();
-        assert_eq!("hello".to_string(), res);
-    }
-
-    // #[tokio::test]
-    async fn call_method_help() {
-        let electrum = get_electrum_rpc();
-        let res = electrum.get_help().await.unwrap();
-        println!("{}", res);
-        assert_eq!("hello".to_string(), res);
-    }
-
-    // #[tokio::test]
-    async fn call_method_get_info() {
-        let electrum = get_electrum_rpc();
-
-        let res = electrum.get_info().await.unwrap();
-        println!("{}", res);
-        assert_eq!("hello".to_string(), res);
-    }
-
-    // #[tokio::test]
-    async fn call_method_get_balance() {
-        let electrum = get_electrum_rpc();
-
-        let res = electrum.get_balance().await.unwrap();
-        println!("{}", res);
-        assert_eq!("hello".to_string(), res);
-    }
-
-
-    // #[tokio::test]
-    async fn call_method_list_wallets() {
-        let electrum = get_electrum_rpc();
-
-        let res = electrum.list_wallets().await.unwrap();
-        println!("{}", res);
-        assert_eq!("hello".to_string(), res);
-    }
-
-    // #[tokio::test]
-    async fn call_method_load_wallet_default_wallet() {
-        let electrum = get_electrum_rpc();
-
-        let res = electrum.load_wallet(None, None).await.unwrap();
-        assert_eq!("hello".to_string(), res);
-    }
-
-    // #[tokio::test]
-    async fn call_method_load_wallet_from_path_without_password() {
-        let electrum = get_electrum_rpc();
-        let path = Some(Box::from(Path::new("/home/electrum/.electrum/testnet/wallets/default_wallet")));
-        let res = electrum.load_wallet(path, None).await.unwrap();
-        assert_eq!("hello".to_string(), res);
-    }
-
-    // #[tokio::test]
-    async fn call_method_load_wallet_from_path_with_password() {
-        // let electrum = get_electrum_rpc();
-        // let path = Some(Box::from(Path::new("/home/electrum/.electrum/testnet/wallets/default_wallet")));
-        // let res = electrum.load_wallet(path, None).await.unwrap();
-        // assert_eq!("hello".to_string(), res);
-        todo!()
-    }
-
-    // #[tokio::test]
-    async fn call_method_create_wallet_default() {
-        let electrum = get_electrum_rpc();
-        let res = electrum.create_wallet().await.unwrap();
-        assert_eq!("hello".to_string(), res);
-        todo!()
-    }
-
-    // #[tokio::test]
-    async fn call_method_list_addresses_default() {
-        let electrum = get_electrum_rpc();
-        let res = electrum.list_addresses().await.unwrap();
-        assert_eq!("hello".to_string(), res);
-        todo!()
     }
 }
