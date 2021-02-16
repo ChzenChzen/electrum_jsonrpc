@@ -1,3 +1,6 @@
+//! Simple asynchronous lib crate for interaction with Electrum client daemon via calling json-rpc methods.
+//! Built on top of [tokio](https://docs.rs/tokio/1.2.0/tokio/) and [hyper](https://docs.rs/hyper/0.14.4/hyper/) crates.
+
 mod error;
 pub mod ext;
 
