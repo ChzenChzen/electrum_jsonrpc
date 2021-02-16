@@ -1,4 +1,5 @@
-use electrum_jsonrpc::{ElectrumRpc};
+//! Integration tests for Electrum's json-rpc calls.
+
 use electrum_jsonrpc::ext::tests::*;
 use tokio;
 use std::path::Path;

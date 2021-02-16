@@ -1,17 +1,10 @@
-#![allow(dead_code)]
-#![allow(unused_imports)]
-#![allow(unused_variables)]
-#![allow(warnings)]
-
 mod error;
 pub mod ext;
 
 use hyper::{Client, Uri, Request, Body, Method, Response};
-use std::net::{ToSocketAddrs, SocketAddr};
 use hyper::client::HttpConnector;
-use error::{ElectrumRpcError, Result};
+use error::Result;
 use serde::{Serialize, Deserialize};
-use hyper::body::{Bytes, Buf};
 use hyper::header::AUTHORIZATION;
 use base64;
 use std::collections::HashMap;
@@ -72,11 +65,6 @@ impl RpcBodyBuilder {
             method: ElectrumMethod::Empty,
             params: HashMap::new(),
         }
-    }
-
-    pub fn json_rpc(mut self, value: f32) -> Self {
-        self.json_rpc = value;
-        self
     }
 
     pub fn id(mut self, id: u64) -> Self {
@@ -141,7 +129,7 @@ impl ElectrumRpc {
             .method(Method::POST)
             .header("accept", "application/json")
             .header(AUTHORIZATION, &self.auth)
-            .uri("http://tests:tests@localhost:7000")
+            .uri(&self.address)
             .body(Body::from(payload))?;
 
         let resp = self.client.request(req).await?;
@@ -218,8 +206,7 @@ impl ElectrumRpc {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hyper::http::uri::{InvalidUri};
-    use std::error::Error;
+    use crate::error::{ElectrumRpcError, InvalidUri};
     use crate::ext::tests::*;
 
     #[test]
@@ -239,7 +226,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn new_electrum_instance_empty_address() {
-        let electrum = ElectrumRpc::new(
+        ElectrumRpc::new(
             LOGIN.clone(),
             PASSWORD.clone(),
             "".to_string(),
@@ -255,13 +242,12 @@ mod tests {
             "".to_string(),
         );
 
-        assert!(matches!(electrum, Err(ElectrumRpcError::AddressError(InvalidUri))))
+        assert!(matches!(electrum, Err(ElectrumRpcError::AddressError(InvalidUri {..}))))
     }
 
     #[test]
     fn rpc_body_builder() {
         let body = RpcBody::new()
-            .json_rpc(2.0)
             .id(1111)
             .method(ElectrumMethod::GetInfo)
             .build();

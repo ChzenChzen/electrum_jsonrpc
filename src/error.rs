@@ -1,8 +1,6 @@
 use std::fmt;
 use std::error;
-use std::fmt::Display;
-use hyper::http::uri::InvalidUri;
-use std::borrow::BorrowMut;
+pub use hyper::http::uri::InvalidUri;
 
 pub type Result<T> = std::result::Result<T, ElectrumRpcError>;
 
