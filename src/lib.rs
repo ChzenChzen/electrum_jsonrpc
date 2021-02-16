@@ -4,7 +4,7 @@
 #![allow(warnings)]
 
 mod error;
-mod ext;
+pub mod ext;
 
 use hyper::{Client, Uri, Request, Body, Method, Response};
 use std::net::{ToSocketAddrs, SocketAddr};
@@ -220,19 +220,7 @@ mod tests {
     use super::*;
     use hyper::http::uri::{InvalidUri};
     use std::error::Error;
-
-    static ADDR: &str = "http://127.0.0.1:7000";
-    static LOGIN: &str = "tests";
-    static PASSWORD: &str = "tests";
-
-    fn get_electrum_rpc() -> ElectrumRpc {
-        ElectrumRpc::new(
-            LOGIN.to_string(),
-            PASSWORD.to_string(),
-            ADDR.to_string(),
-        ).unwrap()
-    }
-
+    use crate::ext::tests::*;
 
     #[test]
     fn new_electrum_instance0() {
@@ -245,15 +233,15 @@ mod tests {
 
         let encoded_creds = electrum.auth.split(' ').collect::<Vec<&str>>()[1];
         let decoded_creds = base64::decode(encoded_creds).unwrap();
-        assert_eq!("tests:tests", std::str::from_utf8(&decoded_creds).unwrap());
+        assert_eq!("test:test", std::str::from_utf8(&decoded_creds).unwrap());
     }
 
     #[test]
     #[should_panic]
     fn new_electrum_instance_empty_address() {
         let electrum = ElectrumRpc::new(
-            LOGIN.to_string(),
-            PASSWORD.to_string(),
+            LOGIN.clone(),
+            PASSWORD.clone(),
             "".to_string(),
         ).unwrap();
     }
@@ -262,8 +250,8 @@ mod tests {
     #[test]
     fn error_casting_address_error() {
         let electrum = ElectrumRpc::new(
-            LOGIN.to_string(),
-            PASSWORD.to_string(),
+            LOGIN.clone(),
+            PASSWORD.clone(),
             "".to_string(),
         );
 
