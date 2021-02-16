@@ -80,8 +80,8 @@ impl RpcBodyBuilder {
         self
     }
 
-    pub fn build(self) -> RpcBody {
-        RpcBody {
+    pub fn build(self) -> JsonRpcBody {
+        JsonRpcBody {
             json_rpc: self.json_rpc,
             id: self.id,
             method: self.method,
@@ -92,14 +92,14 @@ impl RpcBodyBuilder {
 
 
 #[derive(Serialize, Deserialize)]
-struct RpcBody {
+struct JsonRpcBody {
     json_rpc: f32,
     id: u64,
     method: ElectrumMethod,
     params: HashMap<Param, String>,
 }
 
-impl RpcBody {
+impl JsonRpcBody {
     pub fn new() -> RpcBodyBuilder {
         RpcBodyBuilder::new()
     }
@@ -111,12 +111,12 @@ impl RpcBody {
 /// Client represents methods for making json-rpc calls to Electrum daemon.
 /// # Examples
 /// ```
-/// # use electrum_jsonrpc::ElectrumRpc;
+/// # use electrum_jsonrpc::Electrum;
 /// # use hyper::{Response, Body};
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
-///     let client = ElectrumRpc::new(
+///     let client = Electrum::new(
 ///         "dummy_login".to_string(),
 ///         "dummy_password".to_string(),
 ///         "http://127.0.0.1:7000".to_string(),
@@ -127,14 +127,14 @@ impl RpcBody {
 ///     Ok(())
 /// }
 /// ```
-pub struct ElectrumRpc {
+pub struct Electrum {
     auth: String,
     address: Uri,
     client: Client<HttpConnector>,
 }
 
-impl ElectrumRpc {
-    /// Create new ElectrumRPc instance
+impl Electrum {
+    /// Create new ElectrumRpc instance
     pub fn new(login: String, password: String, address: String) -> Result<Self> {
         let client = Client::new();
         let address = address.parse::<Uri>()?;
@@ -148,7 +148,7 @@ impl ElectrumRpc {
         })
     }
 
-    async fn call_method(&self, body: RpcBody) -> Result<Response<Body>> {
+    async fn call_method(&self, body: JsonRpcBody) -> Result<Response<Body>> {
         let payload = serde_json::to_string(&body)?;
 
         let req = Request::builder()
@@ -166,7 +166,7 @@ impl ElectrumRpc {
     /// List all available JSON-RPC calls
     pub async fn get_help(&self) -> Result<Response<Body>> {
         self.call_method(
-            RpcBody::new()
+            JsonRpcBody::new()
                 .id(0)
                 .method(ElectrumMethod::Help)
                 .build()
@@ -176,7 +176,7 @@ impl ElectrumRpc {
     /// Fetch the blockchain network info
     pub async fn get_info(&self) -> Result<Response<Body>> {
         self.call_method(
-            RpcBody::new()
+            JsonRpcBody::new()
                 .method(ElectrumMethod::GetInfo)
                 .build()
         ).await
@@ -185,7 +185,7 @@ impl ElectrumRpc {
     /// Return the balance of your wallet.
     pub async fn get_balance(&self) -> Result<Response<Body>> {
         self.call_method(
-            RpcBody::new()
+            JsonRpcBody::new()
                 .method(ElectrumMethod::GetBalance)
                 .build()
         ).await
@@ -194,7 +194,7 @@ impl ElectrumRpc {
     /// List wallets opened in daemon
     pub async fn list_wallets(&self) -> Result<Response<Body>> {
         self.call_method(
-            RpcBody::new()
+            JsonRpcBody::new()
                 .method(ElectrumMethod::ListWallets)
                 .build()
         ).await
@@ -202,7 +202,7 @@ impl ElectrumRpc {
 
     /// Open wallet in daemon
     pub async fn load_wallet(&self, wallet_path: Option<Box<Path>>, password: Option<String>) -> Result<Response<Body>> {
-        let mut builder = RpcBody::new()
+        let mut builder = JsonRpcBody::new()
             .method(ElectrumMethod::LoadWallet);
 
 
@@ -220,7 +220,7 @@ impl ElectrumRpc {
     ///Create a new wallet
     pub async fn create_wallet(&self) -> Result<Response<Body>> {
         self.call_method(
-            RpcBody::new()
+            JsonRpcBody::new()
                 .method(ElectrumMethod::CreateWallet)
                 .build()
         ).await
@@ -231,7 +231,7 @@ impl ElectrumRpc {
     /// Use optional arguments to filter the results
     pub async fn list_addresses(&self) -> Result<Response<Body>> {
         self.call_method(
-            RpcBody::new()
+            JsonRpcBody::new()
                 .method(ElectrumMethod::ListAddresses)
                 .build()
         ).await
@@ -261,7 +261,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn new_electrum_instance_empty_address() {
-        ElectrumRpc::new(
+        Electrum::new(
             LOGIN.clone(),
             PASSWORD.clone(),
             "".to_string(),
@@ -271,7 +271,7 @@ mod tests {
 
     #[test]
     fn error_casting_address_error() {
-        let electrum = ElectrumRpc::new(
+        let electrum = Electrum::new(
             LOGIN.clone(),
             PASSWORD.clone(),
             "".to_string(),
@@ -282,7 +282,7 @@ mod tests {
 
     #[test]
     fn rpc_body_builder() {
-        let body = RpcBody::new()
+        let body = JsonRpcBody::new()
             .id(1111)
             .method(ElectrumMethod::GetInfo)
             .build();

@@ -1,5 +1,5 @@
 pub mod tests {
-    use crate::ElectrumRpc;
+    use crate::Electrum;
     use std::env;
     use lazy_static::lazy_static;
 
@@ -26,8 +26,8 @@ pub mod tests {
 
 
 
-    pub fn get_electrum_rpc() -> ElectrumRpc {
-        ElectrumRpc::new(
+    pub fn get_electrum_rpc() -> Electrum {
+        Electrum::new(
             LOGIN.clone(),
             PASSWORD.clone(),
             ADDR.clone(),
