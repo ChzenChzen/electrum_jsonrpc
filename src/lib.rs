@@ -1,7 +1,7 @@
 //! Simple asynchronous lib crate for interaction with Electrum client daemon via calling json-rpc methods.
 //! Built on top of [tokio](https://docs.rs/tokio/1.2.0/tokio/) and [hyper](https://docs.rs/hyper/0.14.4/hyper/) crates.
 
-mod error;
+pub mod error;
 pub mod ext;
 
 use hyper::{Client, Uri, Request, Body, Method, Response};
@@ -14,11 +14,6 @@ use std::collections::HashMap;
 use std::str;
 use std::path::Path;
 
-pub struct ElectrumRpc {
-    auth: String,
-    address: Uri,
-    client: Client<HttpConnector>,
-}
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -111,7 +106,35 @@ impl RpcBody {
 }
 
 
+/// Electrum JSON-RPC client.
+///
+/// Client represents methods for making json-rpc calls to Electrum daemon.
+/// # Examples
+/// ```
+/// # use electrum_jsonrpc::ElectrumRpc;
+/// # use hyper::{Response, Body};
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let client = ElectrumRpc::new(
+///         "dummy_login".to_string(),
+///         "dummy_password".to_string(),
+///         "http://127.0.0.1:7000".to_string(),
+///     )?;
+///
+///     let resp = client.get_help().await?;
+///
+///     Ok(())
+/// }
+/// ```
+pub struct ElectrumRpc {
+    auth: String,
+    address: Uri,
+    client: Client<HttpConnector>,
+}
+
 impl ElectrumRpc {
+    /// Create new ElectrumRPc instance
     pub fn new(login: String, password: String, address: String) -> Result<Self> {
         let client = Client::new();
         let address = address.parse::<Uri>()?;
@@ -140,6 +163,7 @@ impl ElectrumRpc {
         Ok(resp)
     }
 
+    /// List all available JSON-RPC calls
     pub async fn get_help(&self) -> Result<Response<Body>> {
         self.call_method(
             RpcBody::new()
@@ -149,6 +173,7 @@ impl ElectrumRpc {
         ).await
     }
 
+    /// Fetch the blockchain network info
     pub async fn get_info(&self) -> Result<Response<Body>> {
         self.call_method(
             RpcBody::new()
@@ -157,6 +182,7 @@ impl ElectrumRpc {
         ).await
     }
 
+    /// Return the balance of your wallet.
     pub async fn get_balance(&self) -> Result<Response<Body>> {
         self.call_method(
             RpcBody::new()
@@ -165,6 +191,7 @@ impl ElectrumRpc {
         ).await
     }
 
+    /// List wallets opened in daemon
     pub async fn list_wallets(&self) -> Result<Response<Body>> {
         self.call_method(
             RpcBody::new()
@@ -173,6 +200,7 @@ impl ElectrumRpc {
         ).await
     }
 
+    /// Open wallet in daemon
     pub async fn load_wallet(&self, wallet_path: Option<Box<Path>>, password: Option<String>) -> Result<Response<Body>> {
         let mut builder = RpcBody::new()
             .method(ElectrumMethod::LoadWallet);
@@ -189,6 +217,7 @@ impl ElectrumRpc {
         self.call_method(builder.build()).await
     }
 
+    ///Create a new wallet
     pub async fn create_wallet(&self) -> Result<Response<Body>> {
         self.call_method(
             RpcBody::new()
@@ -197,6 +226,9 @@ impl ElectrumRpc {
         ).await
     }
 
+    /// List wallet addresses.
+    /// Returns the list of all addresses in your wallet.
+    /// Use optional arguments to filter the results
     pub async fn list_addresses(&self) -> Result<Response<Body>> {
         self.call_method(
             RpcBody::new()
