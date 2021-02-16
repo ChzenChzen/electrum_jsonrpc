@@ -1,0 +1,1 @@
+Simple library for interaction with Electron client daemon through json-rpc 
