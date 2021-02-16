@@ -5,6 +5,7 @@ services:
     build:
       context: ./docker/electrum
     environment:
+      - ELECTRUM_DAEMON_ADDRESS=${ELECTRUM_DAEMON_ADDRESS}
       - ELECTRUM_TESTNET=${ELECTRUM_TESTNET}
       - ELECTRUM_USER=${ELECTRUM_USER}
       - ELECTRUM_PASSWORD=${ELECTRUM_PASSWORD}
