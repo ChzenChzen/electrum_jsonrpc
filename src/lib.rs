@@ -27,6 +27,9 @@ enum ElectrumMethod {
     #[serde(rename = "list_wallets")]
     ListWallets,
 
+    #[serde(rename = "close_wallet")]
+    CloseWallet,
+
     #[serde(rename = "load_wallet")]
     LoadWallet,
 
@@ -273,6 +276,16 @@ impl Electrum {
             JsonRpcBody::new()
                 .method(ElectrumMethod::RestoreWallet)
                 .add_param(Param::Text, text)
+                .build()
+        ).await
+    }
+
+
+    /// Close opened wallet.
+    pub async fn close_wallet(&self) -> Result<Response<Body>> {
+        self.call_method(
+            JsonRpcBody::new()
+                .method(ElectrumMethod::CloseWallet)
                 .build()
         ).await
     }
