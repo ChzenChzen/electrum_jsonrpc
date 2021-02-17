@@ -32,6 +32,8 @@ enum ElectrumMethod {
 
     #[serde(rename = "create")]
     CreateWallet,
+    #[serde(rename = "restore")]
+    RestoreWallet,
 
     #[serde(rename = "listaddresses")]
     ListAddresses,
@@ -45,6 +47,7 @@ enum ElectrumMethod {
 #[derive(Hash, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum Param {
+    Text,
     #[serde(rename = "address")]
     BtcAddress,
     #[serde(rename = "wallet_path")]
@@ -260,6 +263,18 @@ impl Electrum {
         }
 
         self.call_method(builder.build()).await
+    }
+
+    /// Restore a wallet from text. Text can be a seed phrase, a master
+    /// public key, a master private key, a list of bitcoin addresses
+    /// or bitcoin private keys.
+    pub async fn restore(&self, text: String) -> Result<Response<Body>> {
+        self.call_method(
+            JsonRpcBody::new()
+                .method(ElectrumMethod::RestoreWallet)
+                .add_param(Param::Text, text)
+                .build()
+        ).await
     }
 }
 
