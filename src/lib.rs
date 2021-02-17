@@ -268,7 +268,7 @@ impl Electrum {
     /// Restore a wallet from text. Text can be a seed phrase, a master
     /// public key, a master private key, a list of bitcoin addresses
     /// or bitcoin private keys.
-    pub async fn restore(&self, text: String) -> Result<Response<Body>> {
+    pub async fn restore_wallet(&self, text: String) -> Result<Response<Body>> {
         self.call_method(
             JsonRpcBody::new()
                 .method(ElectrumMethod::RestoreWallet)
