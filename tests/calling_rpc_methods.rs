@@ -98,3 +98,14 @@ async fn call_method_notify_empty_url() {
     let json: Value = serde_json::from_slice(&slice).unwrap();
     assert_eq!(json["result"], true, "\njson body is: {}", json)
 }
+
+
+#[tokio::test]
+async fn call_method_restore_wallet() {
+    let electrum = get_electrum_rpc();
+    let seed_phrase = "clever city snake tonight action output garbage gun upset raven pudding know".to_string();
+    let res = electrum.restore_wallet(seed_phrase).await.unwrap();
+    let slice = body::to_bytes(res).await.unwrap();
+    let json: Value = serde_json::from_slice(&slice).unwrap();
+    assert_eq!(json["result"], true, "\njson body is: {}", json);
+}
