@@ -3,6 +3,7 @@
 
 pub mod error;
 pub mod ext;
+pub mod btc;
 
 use hyper::{Client, Uri, Request, Body, Method, Response};
 use hyper::client::HttpConnector;
@@ -13,6 +14,7 @@ use base64;
 use std::collections::HashMap;
 use std::str;
 use std::path::Path;
+use btc::BtcAddress;
 
 
 #[derive(Serialize, Deserialize)]
@@ -34,16 +36,21 @@ enum ElectrumMethod {
     #[serde(rename = "listaddresses")]
     ListAddresses,
 
+    Notify,
     Help,
     Empty,
 }
 
 
 #[derive(Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 enum Param {
+    #[serde(rename = "address")]
+    BtcAddress,
     #[serde(rename = "wallet_path")]
     WalletPath,
-
+    #[serde(rename = "URL")]
+    Url,
     Password,
 }
 
@@ -127,6 +134,8 @@ impl JsonRpcBody {
 ///     Ok(())
 /// }
 /// ```
+
+
 pub struct Electrum {
     auth: String,
     address: Uri,
@@ -235,6 +244,22 @@ impl Electrum {
                 .method(ElectrumMethod::ListAddresses)
                 .build()
         ).await
+    }
+    /// Watch an address.
+    /// Every time the address changes, a http POST is sent to the URL.
+    /// Call with an `None` URL to stop watching an address.
+    pub async fn notify(&self, address: BtcAddress, url: Option<Uri>) -> Result<Response<Body>> {
+        let mut builder = JsonRpcBody::new()
+            .method(ElectrumMethod::Notify)
+            .add_param(Param::BtcAddress, address.into());
+
+        if let Some(url) = url {
+            builder = builder.add_param(Param::Url, url.to_string());
+        } else {
+            builder = builder.add_param(Param::Url, "".to_string());
+        }
+
+        self.call_method(builder.build()).await
     }
 }
 
