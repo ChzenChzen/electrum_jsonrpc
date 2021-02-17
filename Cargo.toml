@@ -1,10 +1,11 @@
 [package]
 name = "electrum_jsonrpc"
-version = "0.2.4"
+version = "0.2.5"
 authors = ["fomotoshi <fomotoshi@ya.ru>"]
 edition = "2018"
 description = "Simple library for interaction with Electron client daemon through json-rpc."
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/ChzenChzen/electrum_jsonrpc"
 
 [dependencies]
 tokio = { version = "1.2.0", features = ["full"] }
