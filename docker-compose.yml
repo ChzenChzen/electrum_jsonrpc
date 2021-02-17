@@ -9,6 +9,11 @@ services:
       - ELECTRUM_TESTNET=${ELECTRUM_TESTNET}
       - ELECTRUM_USER=${ELECTRUM_USER}
       - ELECTRUM_PASSWORD=${ELECTRUM_PASSWORD}
+    volumes:
+      - type: bind
+        source: ./docker/electrum/data
+        target: /home/electrum/.electrum
+
     ports:
       - 7000:7000
 
