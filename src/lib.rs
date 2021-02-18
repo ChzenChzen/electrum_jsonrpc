@@ -23,6 +23,8 @@ enum ElectrumMethod {
     #[serde(rename = "getinfo")]
     GetInfo,
     GetBalance,
+    GetAddressHistory,
+    GetAddressBalance,
 
     #[serde(rename = "list_wallets")]
     ListWallets,
@@ -202,6 +204,28 @@ impl Electrum {
         self.call_method(
             JsonRpcBody::new()
                 .method(ElectrumMethod::GetBalance)
+                .build()
+        ).await
+    }
+
+    /// Return the transaction history of any address.
+    /// Note: This is a walletless server query, results are not checked by SPV.
+    pub async fn get_address_history(&self, address: BtcAddress) -> Result<Response<Body>> {
+        self.call_method(
+            JsonRpcBody::new()
+                .method(ElectrumMethod::GetAddressHistory)
+                .add_param(Param::BtcAddress, address.into())
+                .build()
+        ).await
+    }
+
+    /// Return the balance of any address.
+    /// Note: This is a walletless server query, results are not checked by SPV.
+    pub async fn get_address_balance(&self, address: BtcAddress) -> Result<Response<Body>> {
+        self.call_method(
+            JsonRpcBody::new()
+                .method(ElectrumMethod::GetAddressBalance)
+                .add_param(Param::BtcAddress, address.into())
                 .build()
         ).await
     }
