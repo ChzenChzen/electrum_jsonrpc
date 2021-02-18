@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 
 /// Represents btc address
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct BtcAddress {
     address: String,
 }
