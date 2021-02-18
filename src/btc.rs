@@ -9,7 +9,7 @@ pub struct BtcAddress {
 
 // todo: address verification
 impl BtcAddress {
-    /// Create new address from String
+    /// Create a new address from String
     pub fn new(address: String) -> Self {
         Self { address }
     }
