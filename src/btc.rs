@@ -3,6 +3,7 @@ use serde::{Serialize, Deserialize};
 /// Represents btc address
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BtcAddress<'a> {
+    #[serde(borrow)]
     address: &'a str,
 }
 
