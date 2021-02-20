@@ -2,10 +2,8 @@
 
 use electrum_jsonrpc::ext::tests::*;
 use tokio;
-use std::path::Path;
+use std::path::PathBuf;
 use electrum_jsonrpc::btc::BtcAddress;
-use hyper::{Uri, body};
-use serde_json::Value;
 
 
 #[tokio::test]
@@ -51,7 +49,7 @@ async fn call_method_load_wallet_default_wallet() {
 #[tokio::test]
 async fn call_method_load_wallet_from_path_without_password() {
     let electrum = get_electrum_rpc();
-    let path = Some(Box::from(Path::new("/home/electrum/.electrum/testnet/wallets/default_wallet")));
+    let path = Some(PathBuf::from("/home/electrum/.electrum/testnet/wallets/default_wallet"));
     let res = electrum.load_wallet(path, None).await.unwrap();
     assert_eq!(res.status(), 200);
 }
@@ -81,9 +79,9 @@ async fn call_method_list_addresses_default() {
 #[tokio::test]
 async fn call_method_notify_url() {
     let electrum = get_electrum_rpc();
-    let addr = BtcAddress::new("tb1qncyt0k7dr2kspmrg3znqu4k808c09k385v38dn".to_string());
+    let addr = BtcAddress::new("tb1qncyt0k7dr2kspmrg3znqu4k808c09k385v38dn");
     let url = Some(Uri::from_static("http://127.0.0.1:8888/notify_data"));
-    let res = electrum.notify(addr, url).await.unwrap();
+    let res = electrum.notify(&addr, url).await.unwrap();
     let slice = body::to_bytes(res.into_body()).await.unwrap();
 
     let json: Value = serde_json::from_slice(&slice).unwrap();
@@ -93,8 +91,8 @@ async fn call_method_notify_url() {
 #[tokio::test]
 async fn call_method_notify_empty_url() {
     let electrum = get_electrum_rpc();
-    let addr = BtcAddress::new("tb1qncyt0k7dr2kspmrg3znqu4k808c09k385v38dn".to_string());
-    let res = electrum.notify(addr, None).await.unwrap();
+    let addr = BtcAddress::new("tb1qncyt0k7dr2kspmrg3znqu4k808c09k385v38dn");
+    let res = electrum.notify(&addr, None).await.unwrap();
     let slice = body::to_bytes(res.into_body()).await.unwrap();
 
     let json: Value = serde_json::from_slice(&slice).unwrap();
@@ -107,8 +105,8 @@ async fn call_method_restore_wallet() {
     let electrum = get_electrum_rpc();
     electrum.close_wallet().await.unwrap();
 
-    let seed_phrase = "clever city snake tonight action output garbage gun upset raven pudding know".to_string();
-    let res = electrum.restore_wallet(seed_phrase).await.unwrap();
+    let seed_phrase = "clever city snake tonight action output garbage gun upset raven pudding know";
+    let res = electrum.restore_wallet(&seed_phrase).await.unwrap();
     let slice = body::to_bytes(res).await.unwrap();
 
     let json: Value = serde_json::from_slice(&slice).unwrap();
