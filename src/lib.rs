@@ -13,11 +13,12 @@ use hyper::header::AUTHORIZATION;
 use base64;
 use std::collections::HashMap;
 use std::str;
-use std::path::Path;
+use std::path::PathBuf;
 use btc::BtcAddress;
+use std::borrow::Borrow;
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
 enum ElectrumMethod {
     #[serde(rename = "getinfo")]
@@ -49,7 +50,7 @@ enum ElectrumMethod {
 }
 
 
-#[derive(Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Hash, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 enum Param {
     Text,
@@ -63,14 +64,14 @@ enum Param {
 }
 
 
-struct RpcBodyBuilder {
+struct JsonRpcBodyBuilder<'a> {
     json_rpc: f32,
     id: u64,
     method: ElectrumMethod,
-    params: HashMap<Param, String>,
+    params: HashMap<Param, &'a str>,
 }
 
-impl RpcBodyBuilder {
+impl<'a> JsonRpcBodyBuilder<'a> {
     pub fn new() -> Self {
         Self {
             json_rpc: 2.0,
@@ -90,12 +91,12 @@ impl RpcBodyBuilder {
         self
     }
 
-    pub fn add_param(mut self, key: Param, value: String) -> Self {
-        self.params.insert(key, value);
+    pub fn add_param(mut self, param: Param, value: &'a str) -> Self {
+        self.params.insert(param, value);
         self
     }
 
-    pub fn build(self) -> JsonRpcBody {
+    pub fn build(self) -> JsonRpcBody<'a> {
         JsonRpcBody {
             json_rpc: self.json_rpc,
             id: self.id,
@@ -106,17 +107,17 @@ impl RpcBodyBuilder {
 }
 
 
-#[derive(Serialize, Deserialize)]
-struct JsonRpcBody {
+#[derive(Serialize)]
+struct JsonRpcBody<'a> {
     json_rpc: f32,
     id: u64,
     method: ElectrumMethod,
-    params: HashMap<Param, String>,
+    params: HashMap<Param, &'a str>,
 }
 
-impl JsonRpcBody {
-    pub fn new() -> RpcBodyBuilder {
-        RpcBodyBuilder::new()
+impl<'a> JsonRpcBody<'a> {
+    pub fn new() -> JsonRpcBodyBuilder<'a> {
+        JsonRpcBodyBuilder::new()
     }
 }
 
@@ -165,8 +166,8 @@ impl Electrum {
         })
     }
 
-    async fn call_method(&self, body: JsonRpcBody) -> Result<Response<Body>> {
-        let payload = serde_json::to_string(&body)?;
+    async fn call_method<'a>(&self, body: &'a JsonRpcBody<'a>) -> Result<Response<Body>> {
+        let payload = serde_json::to_string(body)?;
 
         let req = Request::builder()
             .method(Method::POST)
@@ -187,6 +188,7 @@ impl Electrum {
                 .id(0)
                 .method(ElectrumMethod::Help)
                 .build()
+                .borrow()
         ).await
     }
 
@@ -196,6 +198,7 @@ impl Electrum {
             JsonRpcBody::new()
                 .method(ElectrumMethod::GetInfo)
                 .build()
+                .borrow()
         ).await
     }
 
@@ -205,28 +208,31 @@ impl Electrum {
             JsonRpcBody::new()
                 .method(ElectrumMethod::GetBalance)
                 .build()
+                .borrow()
         ).await
     }
 
     /// Return the transaction history of any address.
     /// Note: This is a walletless server query, results are not checked by SPV.
-    pub async fn get_address_history(&self, address: BtcAddress) -> Result<Response<Body>> {
+    pub async fn get_address_history<'a>(&self, address: &BtcAddress<'a>) -> Result<Response<Body>> {
         self.call_method(
             JsonRpcBody::new()
                 .method(ElectrumMethod::GetAddressHistory)
                 .add_param(Param::BtcAddress, address.into())
                 .build()
+                .borrow()
         ).await
     }
 
     /// Return the balance of any address.
     /// Note: This is a walletless server query, results are not checked by SPV.
-    pub async fn get_address_balance(&self, address: BtcAddress) -> Result<Response<Body>> {
+    pub async fn get_address_balance<'a>(&self, address: &BtcAddress<'a>) -> Result<Response<Body>> {
         self.call_method(
             JsonRpcBody::new()
                 .method(ElectrumMethod::GetAddressBalance)
                 .add_param(Param::BtcAddress, address.into())
                 .build()
+                .borrow()
         ).await
     }
 
@@ -236,24 +242,24 @@ impl Electrum {
             JsonRpcBody::new()
                 .method(ElectrumMethod::ListWallets)
                 .build()
+                .borrow()
         ).await
     }
 
     /// Open wallet in daemon
-    pub async fn load_wallet(&self, wallet_path: Option<Box<Path>>, password: Option<String>) -> Result<Response<Body>> {
+    pub async fn load_wallet(&self, wallet_path: Option<PathBuf>, password: Option<&str>) -> Result<Response<Body>> {
         let mut builder = JsonRpcBody::new()
             .method(ElectrumMethod::LoadWallet);
 
-
-        if let Some(path) = wallet_path {
-            builder = builder.add_param(Param::WalletPath, path.to_str().unwrap().to_string())
+        if let Some(path) = &wallet_path {
+            builder = builder.add_param(Param::WalletPath, path.to_str().unwrap())
         };
 
         if let Some(password) = password {
             builder = builder.add_param(Param::Password, password)
         };
 
-        self.call_method(builder.build()).await
+        self.call_method(&builder.build()).await
     }
 
     ///Create a new wallet
@@ -262,6 +268,7 @@ impl Electrum {
             JsonRpcBody::new()
                 .method(ElectrumMethod::CreateWallet)
                 .build()
+                .borrow()
         ).await
     }
 
@@ -273,34 +280,35 @@ impl Electrum {
             JsonRpcBody::new()
                 .method(ElectrumMethod::ListAddresses)
                 .build()
+                .borrow()
         ).await
     }
     /// Watch an address.
     /// Every time the address changes, a http POST is sent to the URL.
     /// Call with an `None` URL to stop watching an address.
-    pub async fn notify(&self, address: BtcAddress, url: Option<Uri>) -> Result<Response<Body>> {
-        let mut builder = JsonRpcBody::new()
+    pub async fn notify<'a>(&self, address: &BtcAddress<'a>, url: Option<Uri>) -> Result<Response<Body>> {
+        let url = url
+            .unwrap_or(Uri::from_static(""))
+            .to_string();
+
+        let builder = JsonRpcBody::new()
             .method(ElectrumMethod::Notify)
-            .add_param(Param::BtcAddress, address.into());
+            .add_param(Param::BtcAddress, address.into())
+            .add_param(Param::Url, &url);
 
-        if let Some(url) = url {
-            builder = builder.add_param(Param::Url, url.to_string());
-        } else {
-            builder = builder.add_param(Param::Url, "".to_string());
-        }
-
-        self.call_method(builder.build()).await
+        self.call_method(&builder.build()).await
     }
 
-    /// Restore a wallet from text. Text can be a seed phrase, a master
+    /// Restore a wallet from `text`. `text` can be a seed phrase, a master
     /// public key, a master private key, a list of bitcoin addresses
     /// or bitcoin private keys.
-    pub async fn restore_wallet(&self, text: String) -> Result<Response<Body>> {
+    pub async fn restore_wallet(&self, text: &str) -> Result<Response<Body>> {
         self.call_method(
             JsonRpcBody::new()
                 .method(ElectrumMethod::RestoreWallet)
                 .add_param(Param::Text, text)
                 .build()
+                .borrow()
         ).await
     }
 
@@ -311,6 +319,7 @@ impl Electrum {
             JsonRpcBody::new()
                 .method(ElectrumMethod::CloseWallet)
                 .build()
+                .borrow()
         ).await
     }
 }

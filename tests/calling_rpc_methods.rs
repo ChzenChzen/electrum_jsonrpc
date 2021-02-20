@@ -124,4 +124,3 @@ async fn call_method_close_wallet() {
     let json: Value = serde_json::from_slice(&slice).unwrap();
     assert_eq!(json["result"], true, "\njson body is: {}", json);
 }
-

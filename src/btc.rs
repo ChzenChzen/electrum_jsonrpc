@@ -1,23 +1,25 @@
-use serde::{Serialize, Deserialize};
+use serde::{Serialize};
 
 /// Represents btc address
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct BtcAddress {
-    address: String,
+#[derive(Serialize, Debug, Clone)]
+pub struct BtcAddress<'a> {
+    address: &'a str,
 }
 
 
 // todo: address verification
-impl BtcAddress {
+impl<'a> BtcAddress<'a> {
     /// Create a new address from String
-    pub fn new(address: String) -> Self {
-        Self { address }
+    pub fn new(address: &'a str) -> Self {
+        Self {
+            address
+        }
     }
 }
 
 
-impl From<BtcAddress> for String {
-    fn from(address: BtcAddress) -> Self {
+impl<'a> From<&BtcAddress<'a>> for &'a str {
+    fn from(address: &BtcAddress<'a>) -> Self {
         address.address
     }
 }
