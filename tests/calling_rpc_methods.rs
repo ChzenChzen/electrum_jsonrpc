@@ -1,10 +1,11 @@
 //! Integration tests for Electrum's json-rpc calls.
 
-use electrum_jsonrpc::ext::tests::*;
-use tokio;
-use std::path::PathBuf;
 use electrum_jsonrpc::btc::BtcAddress;
-
+use electrum_jsonrpc::ext::tests::*;
+use hyper::{body, Uri};
+use serde_json::Value;
+use std::path::PathBuf;
+use tokio;
 
 #[tokio::test]
 async fn call_method_help() {
@@ -29,7 +30,6 @@ async fn call_method_get_balance() {
     assert_eq!(res.status(), 200);
 }
 
-
 #[tokio::test]
 async fn call_method_list_wallets() {
     let electrum = get_electrum_rpc();
@@ -49,7 +49,9 @@ async fn call_method_load_wallet_default_wallet() {
 #[tokio::test]
 async fn call_method_load_wallet_from_path_without_password() {
     let electrum = get_electrum_rpc();
-    let path = Some(PathBuf::from("/home/electrum/.electrum/testnet/wallets/default_wallet"));
+    let path = Some(PathBuf::from(
+        "/home/electrum/.electrum/testnet/wallets/default_wallet",
+    ));
     let res = electrum.load_wallet(path, None).await.unwrap();
     assert_eq!(res.status(), 200);
 }
@@ -99,13 +101,13 @@ async fn call_method_notify_empty_url() {
     assert_eq!(json["result"], true, "\njson body is: {}", json)
 }
 
-
 #[tokio::test]
 async fn call_method_restore_wallet() {
     let electrum = get_electrum_rpc();
     electrum.close_wallet().await.unwrap();
 
-    let seed_phrase = "clever city snake tonight action output garbage gun upset raven pudding know";
+    let seed_phrase =
+        "clever city snake tonight action output garbage gun upset raven pudding know";
     let res = electrum.restore_wallet(&seed_phrase).await.unwrap();
     let slice = body::to_bytes(res).await.unwrap();
 
