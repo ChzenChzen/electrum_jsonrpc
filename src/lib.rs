@@ -170,7 +170,6 @@ impl<'a> Invoice<'a> {
 /// }
 /// ```
 
-
 pub struct Electrum {
     auth: String,
     address: Uri,
@@ -192,7 +191,7 @@ impl Electrum {
         })
     }
 
-    async fn call_method<'a>(&self, body: &'a JsonRpcBody<'a>) -> Result<Response<Body>> {
+    async fn call_method(&self, body: &JsonRpcBody) -> Result<Response<Body>> {
         let payload = serde_json::to_string(body)?;
 
         let req = Request::builder()
@@ -214,8 +213,9 @@ impl Electrum {
                 .id(0)
                 .method(ElectrumMethod::Help)
                 .build()
-                .borrow()
-        ).await
+                .borrow(),
+        )
+            .await
     }
 
     /// Fetch the blockchain network info
@@ -224,8 +224,9 @@ impl Electrum {
             JsonRpcBody::new()
                 .method(ElectrumMethod::GetInfo)
                 .build()
-                .borrow()
-        ).await
+                .borrow(),
+        )
+            .await
     }
 
     /// Return the balance of your wallet.
@@ -234,32 +235,41 @@ impl Electrum {
             JsonRpcBody::new()
                 .method(ElectrumMethod::GetBalance)
                 .build()
-                .borrow()
-        ).await
+                .borrow(),
+        )
+            .await
     }
 
     /// Return the transaction history of any address.
     /// Note: This is a walletless server query, results are not checked by SPV.
-    pub async fn get_address_history<'a>(&self, address: &BtcAddress<'a>) -> Result<Response<Body>> {
+    pub async fn get_address_history<'a>(
+        &self,
+        address: &BtcAddress<'a>,
+    ) -> Result<Response<Body>> {
         self.call_method(
             JsonRpcBody::new()
                 .method(ElectrumMethod::GetAddressHistory)
-                .add_param(Param::BtcAddress, address.into())
+                .add_param(Param::BtcAddress, Value::from(String::from(address)))
                 .build()
-                .borrow()
-        ).await
+                .borrow(),
+        )
+            .await
     }
 
     /// Return the balance of any address.
     /// Note: This is a walletless server query, results are not checked by SPV.
-    pub async fn get_address_balance<'a>(&self, address: &BtcAddress<'a>) -> Result<Response<Body>> {
+    pub async fn get_address_balance<'a>(
+        &self,
+        address: &BtcAddress<'a>,
+    ) -> Result<Response<Body>> {
         self.call_method(
             JsonRpcBody::new()
                 .method(ElectrumMethod::GetAddressBalance)
-                .add_param(Param::BtcAddress, address.into())
+                .add_param(Param::BtcAddress, Value::from(String::from(address)))
                 .build()
-                .borrow()
-        ).await
+                .borrow(),
+        )
+            .await
     }
 
     /// List wallets opened in daemon
@@ -268,14 +278,18 @@ impl Electrum {
             JsonRpcBody::new()
                 .method(ElectrumMethod::ListWallets)
                 .build()
-                .borrow()
-        ).await
+                .borrow(),
+        )
+            .await
     }
 
     /// Open wallet in daemon
-    pub async fn load_wallet(&self, wallet_path: Option<PathBuf>, password: Option<&str>) -> Result<Response<Body>> {
-        let mut builder = JsonRpcBody::new()
-            .method(ElectrumMethod::LoadWallet);
+    pub async fn load_wallet(
+        &self,
+        wallet_path: Option<PathBuf>,
+        password: Option<&str>,
+    ) -> Result<Response<Body>> {
+        let mut builder = JsonRpcBody::new().method(ElectrumMethod::LoadWallet);
 
         if let Some(path) = &wallet_path {
             builder = builder.add_param(Param::WalletPath, path.to_str().unwrap())
@@ -294,8 +308,9 @@ impl Electrum {
             JsonRpcBody::new()
                 .method(ElectrumMethod::CreateWallet)
                 .build()
-                .borrow()
-        ).await
+                .borrow(),
+        )
+            .await
     }
 
     /// List wallet addresses.
@@ -306,16 +321,19 @@ impl Electrum {
             JsonRpcBody::new()
                 .method(ElectrumMethod::ListAddresses)
                 .build()
-                .borrow()
-        ).await
+                .borrow(),
+        )
+            .await
     }
     /// Watch an address.
     /// Every time the address changes, a http POST is sent to the URL.
     /// Call with an `None` URL to stop watching an address.
-    pub async fn notify<'a>(&self, address: &BtcAddress<'a>, url: Option<Uri>) -> Result<Response<Body>> {
-        let url = url
-            .unwrap_or(Uri::from_static(""))
-            .to_string();
+    pub async fn notify<'a>(
+        &self,
+        address: &BtcAddress<'a>,
+        url: Option<Uri>,
+    ) -> Result<Response<Body>> {
+        let url = url.unwrap_or(Uri::from_static("")).to_string();
 
         let builder = JsonRpcBody::new()
             .method(ElectrumMethod::Notify)
