@@ -193,6 +193,7 @@ impl Electrum {
 
     async fn call_method(&self, body: &JsonRpcBody) -> Result<Response<Body>> {
         let payload = serde_json::to_string(body)?;
+        info!("Payload is: {}", payload);
 
         let req = Request::builder()
             .method(Method::POST)
@@ -292,11 +293,12 @@ impl Electrum {
         let mut builder = JsonRpcBody::new().method(ElectrumMethod::LoadWallet);
 
         if let Some(path) = &wallet_path {
-            builder = builder.add_param(Param::WalletPath, path.to_str().unwrap())
+            let path = path.to_str().unwrap();
+            builder = builder.add_param(Param::WalletPath, Value::from(path))
         };
 
         if let Some(password) = password {
-            builder = builder.add_param(Param::Password, password)
+            builder = builder.add_param(Param::Password, Value::from(password))
         };
 
         self.call_method(&builder.build()).await
@@ -337,8 +339,8 @@ impl Electrum {
 
         let builder = JsonRpcBody::new()
             .method(ElectrumMethod::Notify)
-            .add_param(Param::BtcAddress, address.into())
-            .add_param(Param::Url, &url);
+            .add_param(Param::BtcAddress, Value::from(String::from(address)))
+            .add_param(Param::Url, Value::from(url));
 
         self.call_method(&builder.build()).await
     }
@@ -350,12 +352,30 @@ impl Electrum {
         self.call_method(
             JsonRpcBody::new()
                 .method(ElectrumMethod::RestoreWallet)
-                .add_param(Param::Text, text)
+                .add_param(Param::Text, Value::from(text))
                 .build()
-                .borrow()
-        ).await
+                .borrow(),
+        )
+            .await
     }
 
+    /// Create a multi-output transaction.
+    pub async fn pay_to_many(
+        &self,
+        fee: Decimal,
+        outputs: Vec<(String, Decimal)>,
+    ) -> Result<Response<Body>> {
+        let outputs = json!(outputs);
+        let fee = fee.to_string();
+        self.call_method(
+            JsonRpcBody::new()
+                .method(ElectrumMethod::PayToMany)
+                .add_param(Param::Fee, Value::from(fee))
+                .add_param(Param::Outputs, outputs)
+                .build()
+                .borrow(),
+        ).await
+    }
 
     /// Close opened wallet.
     pub async fn close_wallet(&self) -> Result<Response<Body>> {
@@ -363,8 +383,9 @@ impl Electrum {
             JsonRpcBody::new()
                 .method(ElectrumMethod::CloseWallet)
                 .build()
-                .borrow()
-        ).await
+                .borrow(),
+        )
+            .await
     }
 }
 
