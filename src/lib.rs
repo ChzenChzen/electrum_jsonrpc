@@ -1,22 +1,25 @@
 //! Simple asynchronous lib crate for interaction with Electrum client daemon via calling json-rpc methods.
 //! Built on top of [tokio](https://docs.rs/tokio/1.2.0/tokio/) and [hyper](https://docs.rs/hyper/0.14.4/hyper/) crates.
 
+pub mod btc;
 pub mod error;
 pub mod ext;
-pub mod btc;
 
-use hyper::{Client, Uri, Request, Body, Method, Response};
-use hyper::client::HttpConnector;
-use error::Result;
-use serde::{Serialize, Deserialize};
-use hyper::header::AUTHORIZATION;
 use base64;
-use std::collections::HashMap;
-use std::str;
-use std::path::PathBuf;
 use btc::BtcAddress;
+use error::Result;
+use hyper::client::HttpConnector;
+use hyper::header::AUTHORIZATION;
+use hyper::{Body, Client, Method, Request, Response, Uri};
+use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use std::borrow::Borrow;
-
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::str;
+use log::info;
+use rust_decimal::prelude::ToPrimitive;
 
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
