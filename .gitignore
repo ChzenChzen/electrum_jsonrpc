@@ -2,3 +2,4 @@
 .env
 .idea
 /docker/electrum/data
+Cargo.lock
