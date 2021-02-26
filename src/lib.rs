@@ -24,6 +24,7 @@ use rust_decimal::prelude::ToPrimitive;
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
 enum ElectrumMethod {
+    Broadcast,
     PayToMany,
 
     #[serde(rename = "getinfo")]
