@@ -54,12 +54,16 @@ enum ElectrumMethod {
     Notify,
     Help,
     Empty,
+    SignTransaction,
 }
 
 #[derive(Hash, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 enum Param {
     Text,
+
+    #[serde(rename = "tx")]
+    Transaction,
 
     #[serde(rename = "address")]
     BtcAddress,
@@ -355,8 +359,30 @@ impl Electrum {
                 .add_param(Param::Text, Value::from(text))
                 .build()
                 .borrow(),
-        )
-            .await
+        ).await
+    }
+
+    /// Sign a transaction. The wallet keys will be used unless a private key is provided.
+    pub async fn sign_transaction(&self, tx: &str) -> Result<Response<Body>> {
+        self.call_method(
+            JsonRpcBody::new()
+                .method(ElectrumMethod::SignTransaction)
+                .add_param(Param::Transaction, Value::from(tx))
+                .build()
+                .borrow()
+        ).await
+    }
+
+
+    /// Broadcast a transaction to the network.
+    pub async fn broadcast(&self, tx: &str) -> Result<Response<Body>> {
+        self.call_method(
+            JsonRpcBody::new()
+                .method(ElectrumMethod::Broadcast)
+                .add_param(Param::Transaction, Value::from(tx))
+                .build()
+                .borrow()
+        ).await
     }
 
     /// Create a multi-output transaction.
