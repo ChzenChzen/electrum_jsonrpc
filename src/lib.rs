@@ -391,21 +391,12 @@ mod tests {
     #[test]
     #[should_panic]
     fn new_electrum_instance_empty_address() {
-        Electrum::new(
-            LOGIN.clone(),
-            PASSWORD.clone(),
-            "".to_string(),
-        ).unwrap();
+        Electrum::new(LOGIN.clone(), PASSWORD.clone(), "".to_string()).unwrap();
     }
-
 
     #[test]
     fn error_casting_address_error() {
-        let electrum = Electrum::new(
-            LOGIN.clone(),
-            PASSWORD.clone(),
-            "".to_string(),
-        );
+        let electrum = Electrum::new(LOGIN.clone(), PASSWORD.clone(), "".to_string());
 
         assert!(matches!(electrum, Err(ElectrumRpcError::AddressError(InvalidUri {..}))))
     }
