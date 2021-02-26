@@ -131,6 +131,22 @@ impl JsonRpcBody {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Invoice<'a> {
+    amount: Decimal,
+
+    #[serde(flatten, borrow)]
+    address: BtcAddress<'a>,
+}
+
+impl<'a> Invoice<'a> {
+    pub fn get_amount(&self) -> Decimal {
+        self.amount
+    }
+    pub fn get_address(&self) -> &BtcAddress<'a> {
+        &self.address
+    }
+}
 
 /// Electrum JSON-RPC client.
 ///
