@@ -60,17 +60,21 @@ enum ElectrumMethod {
 #[serde(rename_all = "lowercase")]
 enum Param {
     Text,
+
     #[serde(rename = "address")]
     BtcAddress,
+
     #[serde(rename = "wallet_path")]
     WalletPath,
     #[serde(rename = "URL")]
     Url,
+
     Password,
+    Fee,
+    Outputs,
 }
 
-
-struct JsonRpcBodyBuilder<'a> {
+struct JsonRpcBodyBuilder {
     json_rpc: f32,
     id: u64,
     method: ElectrumMethod,
