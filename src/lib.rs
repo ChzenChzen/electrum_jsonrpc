@@ -66,6 +66,7 @@ enum Param {
 
     #[serde(rename = "wallet_path")]
     WalletPath,
+
     #[serde(rename = "URL")]
     Url,
 
@@ -78,10 +79,10 @@ struct JsonRpcBodyBuilder {
     json_rpc: f32,
     id: u64,
     method: ElectrumMethod,
-    params: HashMap<Param, &'a str>,
+    params: HashMap<Param, Value>,
 }
 
-impl<'a> JsonRpcBodyBuilder<'a> {
+impl JsonRpcBodyBuilder {
     pub fn new() -> Self {
         Self {
             json_rpc: 2.0,
@@ -101,12 +102,12 @@ impl<'a> JsonRpcBodyBuilder<'a> {
         self
     }
 
-    pub fn add_param(mut self, param: Param, value: &'a str) -> Self {
+    pub fn add_param(mut self, param: Param, value: Value) -> Self {
         self.params.insert(param, value);
         self
     }
 
-    pub fn build(self) -> JsonRpcBody<'a> {
+    pub fn build(self) -> JsonRpcBody {
         JsonRpcBody {
             json_rpc: self.json_rpc,
             id: self.id,
@@ -116,17 +117,16 @@ impl<'a> JsonRpcBodyBuilder<'a> {
     }
 }
 
-
 #[derive(Serialize)]
-struct JsonRpcBody<'a> {
+struct JsonRpcBody {
     json_rpc: f32,
     id: u64,
     method: ElectrumMethod,
-    params: HashMap<Param, &'a str>,
+    params: HashMap<Param, Value>,
 }
 
-impl<'a> JsonRpcBody<'a> {
-    pub fn new() -> JsonRpcBodyBuilder<'a> {
+impl JsonRpcBody {
+    pub fn new() -> JsonRpcBodyBuilder {
         JsonRpcBodyBuilder::new()
     }
 }
