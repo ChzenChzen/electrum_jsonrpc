@@ -24,8 +24,11 @@ use rust_decimal::prelude::ToPrimitive;
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
 enum ElectrumMethod {
+    PayToMany,
+
     #[serde(rename = "getinfo")]
     GetInfo,
+
     GetBalance,
     GetAddressHistory,
     GetAddressBalance,
@@ -41,6 +44,7 @@ enum ElectrumMethod {
 
     #[serde(rename = "create")]
     CreateWallet,
+
     #[serde(rename = "restore")]
     RestoreWallet,
 
@@ -51,7 +55,6 @@ enum ElectrumMethod {
     Help,
     Empty,
 }
-
 
 #[derive(Hash, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
