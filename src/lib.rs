@@ -19,7 +19,6 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str;
 use log::info;
-use rust_decimal::prelude::ToPrimitive;
 
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
