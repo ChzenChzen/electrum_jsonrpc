@@ -55,6 +55,9 @@ enum ElectrumMethod {
     Help,
     Empty,
     SignTransaction,
+
+    #[serde(rename = "add_request")]
+    AddRequest,
 }
 
 #[derive(Hash, PartialEq, Eq, Serialize)]
@@ -77,6 +80,8 @@ enum Param {
     Password,
     Fee,
     Outputs,
+    Amount,
+    Memo,
 }
 
 struct JsonRpcBodyBuilder {
@@ -410,8 +415,25 @@ impl Electrum {
                 .method(ElectrumMethod::CloseWallet)
                 .build()
                 .borrow(),
-        )
-            .await
+        ).await
+    }
+
+    /// Create a payment request, using the first unused address of the wallet.
+    /// The address will be considered as used after this operation.
+    /// If no payment is received, the address will be considered as unused
+    /// if the payment request is deleted from the wallet.
+    pub async fn add_request(&self, amount: Decimal, memo: Option<&str>) -> Result<Response<Body>> {
+        let amount = amount.to_string();
+
+        let mut builder = JsonRpcBody::new()
+            .method(ElectrumMethod::AddRequest)
+            .add_param(Param::Amount, Value::from(amount));
+
+        if let Some(memo) = memo {
+            builder = builder.add_param(Param::Memo, Value::from(memo))
+        };
+
+        self.call_method(&builder.build()).await
     }
 }
 
