@@ -1,24 +1,26 @@
 //! Simple asynchronous lib crate for interaction with Electrum client daemon via calling json-rpc methods.
 //! Built on top of [tokio](https://docs.rs/tokio/1.2.0/tokio/) and [hyper](https://docs.rs/hyper/0.14.4/hyper/) crates.
 
-pub mod btc;
-pub mod error;
-pub mod ext;
-
-use base64;
-use btc::BtcAddress;
-use error::Result;
-use hyper::client::HttpConnector;
-use hyper::header::AUTHORIZATION;
-use hyper::{Body, Client, Method, Request, Response, Uri};
-use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str;
+
+use base64;
+use hyper::{Body, Client, Method, Request, Response, Uri};
+use hyper::client::HttpConnector;
+use hyper::header::AUTHORIZATION;
 use log::info;
+use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+
+use btc::BtcAddress;
+use error::Result;
+
+pub mod btc;
+pub mod error;
+pub mod ext;
 
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -48,8 +50,10 @@ enum ElectrumMethod {
     #[serde(rename = "restore")]
     RestoreWallet,
 
-    #[serde(rename = "listaddresses")]
     ListAddresses,
+
+    #[serde(rename = "list_requests")]
+    ListRequests,
 
     Notify,
     Help,
@@ -82,6 +86,9 @@ enum Param {
     Outputs,
     Amount,
     Memo,
+    Pending,
+    Expired,
+    Paid,
 }
 
 struct JsonRpcBodyBuilder {
@@ -435,13 +442,28 @@ impl Electrum {
 
         self.call_method(&builder.build()).await
     }
+
+    /// List the payment requests you made.
+    /// You can combine `pending`, `expired` and `paid` flags for filtering.
+    pub async fn list_requests(&self, pending: bool, expired: bool, paid: bool) -> Result<Response<Body>> {
+        self.call_method(
+            JsonRpcBody::new()
+                .method(ElectrumMethod::ListRequests)
+                .add_param(Param::Pending, Value::from(pending))
+                .add_param(Param::Expired, Value::from(expired))
+                .add_param(Param::Paid, Value::from(paid))
+                .build()
+                .borrow()
+        ).await
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::error::{ElectrumRpcError, InvalidUri};
     use crate::ext::tests::*;
+
+    use super::*;
 
     #[test]
     fn new_electrum_instance0() {
