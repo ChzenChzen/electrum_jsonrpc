@@ -62,6 +62,8 @@ enum ElectrumMethod {
 
     #[serde(rename = "add_request")]
     AddRequest,
+    #[serde(rename = "rmrequest")]
+    RemoveRequest,
 }
 
 #[derive(Hash, PartialEq, Eq, Serialize)]
@@ -452,6 +454,16 @@ impl Electrum {
                 .add_param(Param::Pending, Value::from(pending))
                 .add_param(Param::Expired, Value::from(expired))
                 .add_param(Param::Paid, Value::from(paid))
+                .build()
+                .borrow()
+        ).await
+    }
+
+    pub async fn remove_request<'a>(&self, address: &BtcAddress<'a>) -> Result<Response<Body>> {
+        self.call_method(
+            JsonRpcBody::new()
+                .method(ElectrumMethod::RemoveRequest)
+                .add_param(Param::BtcAddress, Value::from(String::from(address)))
                 .build()
                 .borrow()
         ).await
