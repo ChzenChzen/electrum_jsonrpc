@@ -1,6 +1,6 @@
 [package]
 name = "electrum_jsonrpc"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["fomotoshi <fomotoshi@ya.ru>"]
 edition = "2018"
 description = "Simple library for interaction with Electron client daemon through json-rpc."
