@@ -7,9 +7,9 @@ use std::path::PathBuf;
 use std::str;
 
 use base64;
-use hyper::{Body, Client, Method, Request, Response, Uri};
 use hyper::client::HttpConnector;
 use hyper::header::AUTHORIZATION;
+use hyper::{Body, Client, Method, Request, Response, Uri};
 use log::info;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -26,6 +26,7 @@ pub mod ext;
 #[serde(rename_all = "lowercase")]
 enum ElectrumMethod {
     Broadcast,
+    PayTo,
     PayToMany,
 
     #[serde(rename = "getinfo")]
@@ -76,6 +77,7 @@ enum Param {
 
     #[serde(rename = "address")]
     BtcAddress,
+    Destination,
 
     #[serde(rename = "wallet_path")]
     WalletPath,
@@ -234,7 +236,7 @@ impl Electrum {
                 .build()
                 .borrow(),
         )
-            .await
+        .await
     }
 
     /// Fetch the blockchain network info
@@ -245,7 +247,7 @@ impl Electrum {
                 .build()
                 .borrow(),
         )
-            .await
+        .await
     }
 
     /// Return the balance of your wallet.
@@ -256,7 +258,7 @@ impl Electrum {
                 .build()
                 .borrow(),
         )
-            .await
+        .await
     }
 
     /// Return the transaction history of any address.
@@ -268,11 +270,11 @@ impl Electrum {
         self.call_method(
             JsonRpcBody::new()
                 .method(ElectrumMethod::GetAddressHistory)
-                .add_param(Param::BtcAddress, Value::from(String::from(address)))
+                .add_param(Param::BtcAddress, Value::from(address))
                 .build()
                 .borrow(),
         )
-            .await
+        .await
     }
 
     /// Return the balance of any address.
@@ -284,11 +286,11 @@ impl Electrum {
         self.call_method(
             JsonRpcBody::new()
                 .method(ElectrumMethod::GetAddressBalance)
-                .add_param(Param::BtcAddress, Value::from(String::from(address)))
+                .add_param(Param::BtcAddress, Value::from(address))
                 .build()
                 .borrow(),
         )
-            .await
+        .await
     }
 
     /// List wallets opened in daemon
@@ -299,7 +301,7 @@ impl Electrum {
                 .build()
                 .borrow(),
         )
-            .await
+        .await
     }
 
     /// Open wallet in daemon
@@ -330,7 +332,7 @@ impl Electrum {
                 .build()
                 .borrow(),
         )
-            .await
+        .await
     }
 
     /// List wallet addresses.
@@ -343,7 +345,7 @@ impl Electrum {
                 .build()
                 .borrow(),
         )
-            .await
+        .await
     }
     /// Watch an address.
     /// Every time the address changes, a http POST is sent to the URL.
@@ -357,7 +359,7 @@ impl Electrum {
 
         let builder = JsonRpcBody::new()
             .method(ElectrumMethod::Notify)
-            .add_param(Param::BtcAddress, Value::from(String::from(address)))
+            .add_param(Param::BtcAddress, Value::from(address))
             .add_param(Param::Url, Value::from(url));
 
         self.call_method(&builder.build()).await
@@ -373,7 +375,8 @@ impl Electrum {
                 .add_param(Param::Text, Value::from(text))
                 .build()
                 .borrow(),
-        ).await
+        )
+        .await
     }
 
     /// Sign a transaction. The wallet keys will be used unless a private key is provided.
@@ -383,10 +386,10 @@ impl Electrum {
                 .method(ElectrumMethod::SignTransaction)
                 .add_param(Param::Transaction, Value::from(tx))
                 .build()
-                .borrow()
-        ).await
+                .borrow(),
+        )
+        .await
     }
-
 
     /// Broadcast a transaction to the network.
     pub async fn broadcast(&self, tx: &str) -> Result<Response<Body>> {
@@ -395,8 +398,28 @@ impl Electrum {
                 .method(ElectrumMethod::Broadcast)
                 .add_param(Param::Transaction, Value::from(tx))
                 .build()
-                .borrow()
-        ).await
+                .borrow(),
+        )
+        .await
+    }
+
+    /// Create a transaction.
+    pub async fn pay_to<'a>(
+        &self,
+        destination: &BtcAddress<'a>,
+        amount: Decimal,
+        fee: Option<Decimal>,
+    ) -> Result<Response<Body>> {
+        let mut builder = JsonRpcBody::new()
+            .method(ElectrumMethod::PayTo)
+            .add_param(Param::De, Value::from(destination))
+            .add_param(Param::Amount, Value::from(amount.to_string()));
+
+        if let Some(fee) = fee {
+            builder = builder.add_param(Param::Fee, Value::from(fee.to_string()));
+        }
+
+        self.call_method(&builder.build()).await
     }
 
     /// Create a multi-output transaction.
@@ -414,7 +437,8 @@ impl Electrum {
                 .add_param(Param::Outputs, outputs)
                 .build()
                 .borrow(),
-        ).await
+        )
+        .await
     }
 
     /// Close opened wallet.
@@ -424,7 +448,8 @@ impl Electrum {
                 .method(ElectrumMethod::CloseWallet)
                 .build()
                 .borrow(),
-        ).await
+        )
+        .await
     }
 
     /// Create a payment request, using the first unused address of the wallet.
@@ -436,7 +461,7 @@ impl Electrum {
 
         let mut builder = JsonRpcBody::new()
             .method(ElectrumMethod::AddRequest)
-            .add_param(Param::Amount, Value::from(amount));
+            .add_param(Param::Amount, Value::from(amount.to_string()));
 
         if let Some(memo) = memo {
             builder = builder.add_param(Param::Memo, Value::from(memo))
@@ -447,7 +472,12 @@ impl Electrum {
 
     /// List the payment requests you made.
     /// You can combine `pending`, `expired` and `paid` flags for filtering.
-    pub async fn list_requests(&self, pending: bool, expired: bool, paid: bool) -> Result<Response<Body>> {
+    pub async fn list_requests(
+        &self,
+        pending: bool,
+        expired: bool,
+        paid: bool,
+    ) -> Result<Response<Body>> {
         self.call_method(
             JsonRpcBody::new()
                 .method(ElectrumMethod::ListRequests)
@@ -455,18 +485,20 @@ impl Electrum {
                 .add_param(Param::Expired, Value::from(expired))
                 .add_param(Param::Paid, Value::from(paid))
                 .build()
-                .borrow()
-        ).await
+                .borrow(),
+        )
+        .await
     }
 
     pub async fn remove_request<'a>(&self, address: &BtcAddress<'a>) -> Result<Response<Body>> {
         self.call_method(
             JsonRpcBody::new()
                 .method(ElectrumMethod::RemoveRequest)
-                .add_param(Param::BtcAddress, Value::from(String::from(address)))
+                .add_param(Param::BtcAddress, Value::from(address))
                 .build()
-                .borrow()
-        ).await
+                .borrow(),
+        )
+        .await
     }
 }
 
@@ -501,7 +533,10 @@ mod tests {
     fn error_casting_address_error() {
         let electrum = Electrum::new(LOGIN.clone(), PASSWORD.clone(), "".to_string());
 
-        assert!(matches!(electrum, Err(ElectrumRpcError::AddressError(InvalidUri {..}))))
+        assert!(matches!(
+            electrum,
+            Err(ElectrumRpcError::AddressError(InvalidUri { .. }))
+        ))
     }
 
     #[test]
