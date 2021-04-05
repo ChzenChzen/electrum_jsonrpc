@@ -412,7 +412,7 @@ impl Electrum {
     ) -> Result<Response<Body>> {
         let mut builder = JsonRpcBody::new()
             .method(ElectrumMethod::PayTo)
-            .add_param(Param::De, Value::from(destination))
+            .add_param(Param::Destination, Value::from(destination))
             .add_param(Param::Amount, Value::from(amount.to_string()));
 
         if let Some(fee) = fee {
