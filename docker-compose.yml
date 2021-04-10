@@ -16,9 +16,3 @@ services:
 
     ports:
       - 7000:7000
-
-#  httpie:
-#    tty: true
-#
-#    image: alpine/httpie:latest
-#    entrypoint: infinity-run.sh
