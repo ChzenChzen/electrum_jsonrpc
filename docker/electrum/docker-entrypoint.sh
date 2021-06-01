@@ -18,6 +18,9 @@ electrum setconfig rpcuser "${ELECTRUM_USER}" $FLAGS --offline
 electrum setconfig rpcpassword "${ELECTRUM_PASSWORD}" $FLAGS --offline
 electrum setconfig rpchost 0.0.0.0 $FLAGS --offline
 electrum setconfig rpcport 7000 $FLAGS --offline
+electrum setconfig dynamic_fees True $FLAGS --offline
+electrum setconfig mempool_fees True $FLAGS --offline
+electrum setconfig depth_level 6 $FLAGS --offline
 
 # XXX: Check load wallet or create
 
