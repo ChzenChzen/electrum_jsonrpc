@@ -32,6 +32,8 @@ enum ElectrumMethod {
     #[serde(rename = "getinfo")]
     GetInfo,
 
+    GetFeeRate,
+
     GetBalance,
     GetAddressHistory,
     GetAddressBalance,
@@ -495,6 +497,16 @@ impl Electrum {
             JsonRpcBody::new()
                 .method(ElectrumMethod::RemoveRequest)
                 .add_param(Param::BtcAddress, Value::from(address))
+                .build()
+                .borrow(),
+        )
+        .await
+    }
+
+    pub async fn get_fee_rate(&self) -> Result<Response<Body>> {
+        self.call_method(
+            JsonRpcBody::new()
+                .method(ElectrumMethod::GetFeeRate)
                 .build()
                 .borrow(),
         )
