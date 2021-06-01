@@ -503,6 +503,8 @@ impl Electrum {
         .await
     }
 
+    /// Return current suggested fee rate (in sat/kvByte),
+    /// according to config settings of electrum.
     pub async fn get_fee_rate(&self) -> Result<Response<Body>> {
         self.call_method(
             JsonRpcBody::new()
