@@ -17,10 +17,12 @@ use serde_json::{json, Value};
 
 use btc::BtcAddress;
 use error::Result;
+use constants::ELECTRUM_DEFAULT_EXPIRATION;
 
 pub mod btc;
 pub mod error;
 pub mod ext;
+mod constants;
 
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -475,8 +477,8 @@ impl Electrum {
             builder = builder.add_param(Param::Memo, Value::from(memo))
         };
 
-        let expiration = Value::from(expiration.unwrap_or(3600));
-        builder.add_param(Param::Expiration, expiration);
+        let expiration = expiration.unwrap_or(ELECTRUM_DEFAULT_EXPIRATION);
+        builder = builder.add_param(Param::Expiration, Value::from(expiration));
 
         self.call_method(&builder.build()).await
     }
