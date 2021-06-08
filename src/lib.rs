@@ -95,6 +95,7 @@ enum Param {
     Pending,
     Expired,
     Paid,
+    Expiration,
 }
 
 struct JsonRpcBodyBuilder {
@@ -458,7 +459,12 @@ impl Electrum {
     /// The address will be considered as used after this operation.
     /// If no payment is received, the address will be considered as unused
     /// if the payment request is deleted from the wallet.
-    pub async fn add_request(&self, amount: Decimal, memo: Option<&str>) -> Result<Response<Body>> {
+    pub async fn add_request(
+        &self,
+        amount: Decimal,
+        memo: Option<&str>,
+        expiration: Option<u64>,
+    ) -> Result<Response<Body>> {
         let amount = amount.to_string();
 
         let mut builder = JsonRpcBody::new()
@@ -468,6 +474,9 @@ impl Electrum {
         if let Some(memo) = memo {
             builder = builder.add_param(Param::Memo, Value::from(memo))
         };
+
+        let expiration = Value::from(expiration.unwrap_or(3600));
+        builder.add_param(Param::Expiration, expiration);
 
         self.call_method(&builder.build()).await
     }
