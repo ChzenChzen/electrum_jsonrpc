@@ -16,13 +16,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use btc::BtcAddress;
-use error::Result;
 use constants::ELECTRUM_DEFAULT_EXPIRATION;
+use error::Result;
 
 pub mod btc;
+mod constants;
 pub mod error;
 pub mod ext;
-mod constants;
 
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -39,6 +39,9 @@ enum ElectrumMethod {
     GetBalance,
     GetAddressHistory,
     GetAddressBalance,
+
+    #[serde(rename = "onchain_history")]
+    GetOnchainHistory,
 
     #[serde(rename = "list_wallets")]
     ListWallets,
@@ -91,6 +94,7 @@ enum Param {
 
     Password,
     Fee,
+    FeeRate,
     Outputs,
     Amount,
     Memo,
@@ -414,6 +418,7 @@ impl Electrum {
         destination: &BtcAddress<'a>,
         amount: Decimal,
         fee: Option<Decimal>,
+        fee_rate: Option<Decimal>,
     ) -> Result<Response<Body>> {
         let mut builder = JsonRpcBody::new()
             .method(ElectrumMethod::PayTo)
@@ -422,6 +427,10 @@ impl Electrum {
 
         if let Some(fee) = fee {
             builder = builder.add_param(Param::Fee, Value::from(fee.to_string()));
+        }
+
+        if let Some(fee_rate) = fee_rate {
+            builder = builder.add_param(Param::FeeRate, Value::from(fee_rate.to_string()));
         }
 
         self.call_method(&builder.build()).await
@@ -520,6 +529,18 @@ impl Electrum {
         self.call_method(
             JsonRpcBody::new()
                 .method(ElectrumMethod::GetFeeRate)
+                .build()
+                .borrow(),
+        )
+        .await
+    }
+
+    /// Wallet onchain history.
+    /// Returns the transaction history of your wallet.
+    pub async fn get_onchain_history(&self) -> Result<Response<Body>> {
+        self.call_method(
+            JsonRpcBody::new()
+                .method(ElectrumMethod::GetOnchainHistory)
                 .build()
                 .borrow(),
         )
